@@ -2,90 +2,90 @@
 
 /* @see https://github.com/isaacs/inherits/blob/master/inherits_browser.js */
 var inherits = function(ctor, superCtor) {
-  ctor.super_ = superCtor;
-  var TempCtor = function() {};
-  TempCtor.prototype = superCtor.prototype;
-  ctor.prototype = new TempCtor();
-  ctor.prototype.constructor = ctor;
+	ctor.super_ = superCtor;
+	var TempCtor = function() {};
+	TempCtor.prototype = superCtor.prototype;
+	ctor.prototype = new TempCtor();
+	ctor.prototype.constructor = ctor;
 };
 
 var SimpleEvents = function() {
-  SimpleEvents.init.call(this);
+	SimpleEvents.init.call(this);
 };
 
 SimpleEvents.init = function() {
-  this._events = {};
+	this._events = {};
 };
 
 SimpleEvents.prototype.addListener = function(type, listener) {
-  if (typeof listener !== 'function') {
-    throw new TypeError('listener must be a function');
-  }
+	if (typeof listener !== 'function') {
+		throw new TypeError('listener must be a function');
+	}
 
-  var self = this;
+	var self = this;
 
-  if (!self._events[type]) {
-    self._events[type] = [];
-  }
+	if (!self._events[type]) {
+		self._events[type] = [];
+	}
 
-  self._events[type].push(function() {
-    return listener.apply(self, arguments);
-  });
+	self._events[type].push(function() {
+		return listener.apply(self, arguments);
+	});
 
-  return self;
+	return self;
 };
 
 SimpleEvents.prototype.on = SimpleEvents.prototype.addListener;
 
 SimpleEvents.prototype.once = function(type, listener) {
-  if (typeof listener !== 'function') {
-    throw new TypeError('listener must be a function');
-  }
+	if (typeof listener !== 'function') {
+		throw new TypeError('listener must be a function');
+	}
 
-  var fired = false;
-  var self = this;
+	var fired = false;
+	var self = this;
 
-  function g() {
-    self.off(type);
+	function g() {
+		self.off(type);
 
-    if (!fired) {
-      fired = true;
-      listener.apply(self, arguments);
-    }
-  }
+		if (!fired) {
+			fired = true;
+			listener.apply(self, arguments);
+		}
+	}
 
-  g.listener = listener;
-  self.on(type, g);
+	g.listener = listener;
+	self.on(type, g);
 
-  return self;
+	return self;
 };
 
 SimpleEvents.prototype.off = function(type) {
-  var self = this;
+	var self = this;
 
-  if (!type) {
-    self._events = {};
-    return self;
-  }
+	if (!type) {
+		self._events = {};
+		return self;
+	}
 
-  delete self._events[type];
-  return self;
+	delete self._events[type];
+	return self;
 };
 
 SimpleEvents.prototype.emit = function(type) {
-  var self = this;
+	var self = this;
 
-  if (!self._events[type]) {
-    throw new Error('Event "' + type + '" don\'t exists');
-  }
+	if (!self._events[type]) {
+		throw new Error('Event "' + type + '" don\'t exists');
+	}
 
-  var args = [].slice.call(arguments, 1);
+	var args = [].slice.call(arguments, 1);
 
-  for (var i = self._events[type].length - 1; i >= 0; i--) {
-    self._events[type][i].apply(self, args);
-  }
+	for (var i = self._events[type].length - 1; i >= 0; i--) {
+		self._events[type][i].apply(self, args);
+	}
 
-  return self;
+	return self;
 };
 
 var Messenger = (function() {
@@ -110,7 +110,7 @@ Messenger.prototype.dispatch = function(type) {
 
 
 var DragAction = function() {
-  SimpleEvents.apply(this, arguments);
+	SimpleEvents.apply(this, arguments);
 };
 
 inherits(DragAction, SimpleEvents);
@@ -123,15 +123,19 @@ DragAction.prototype.stop = function(messageData) {
 	this.emit('stop', messageData);
 };
 
-DragAction.prototype.move = function(messageData) {
-	this.emit('move', messageData);
+DragAction.prototype.moveMain = function(messageData) {
+	this.emit('moveMain', messageData);
+};
+
+DragAction.prototype.moveMini = function(messageData) {
+	this.emit('moveMini', messageData);
 };
 
 
 var DragPosition = function() {
-  SimpleEvents.apply(this, arguments);
+	SimpleEvents.apply(this, arguments);
 
-  this.states = {};
+	this.states = {};
 };
 
 inherits(DragPosition, SimpleEvents);
@@ -146,6 +150,23 @@ DragPosition.prototype.getState = function(name) {
 	return this.states[name];
 };
 
+function getPosition(element) {
+	var xPosition = 0;
+	var yPosition = 0;
+
+	while (element) {
+		xPosition += (element.offsetLeft - element.scrollLeft + element.clientLeft);
+		yPosition += (element.offsetTop - element.scrollTop + element.clientTop);
+		element = element.offsetParent;
+	}
+
+	return {
+		x: xPosition,
+		y: yPosition
+	};
+}
+
+/* jshint jquery:true*/
 
 $(function() {
 	var $dragTarget = $('#hoge');
@@ -164,6 +185,41 @@ $(function() {
 
 	var offsetStore = $dragTarget.offset();
 
+	$minimapWrap
+		.html($minimap)
+		.append($highlight);
+
+	$minimap
+		.attr('id', '')
+		.addClass('js-minimap')
+		.css({
+			'transform-origin': '0 0',
+			'-webkit-transform': transformStyle,
+			'-moz-transform': transformStyle,
+			'-ms-transform': transformStyle,
+			'-o-transform': transformStyle,
+			'transform': transformStyle,
+			'left': minimapleft,
+			'position': 'absolute'
+		});
+
+	$highlight
+		.attr('id', 'js-minimaphighlight')
+		.css({
+			'width': 710,
+			'height': 452,
+			'position': 'absolute',
+			'top': '0',
+			'left': minimapleft,
+			'background': 'rgba(0,0,0,.4)',
+			'transform-origin': '0 0',
+			'-webkit-transform': transformStyle,
+			'-moz-transform': transformStyle,
+			'-ms-transform': transformStyle,
+			'-o-transform': transformStyle,
+			'transform': transformStyle
+		});
+
 	dragAction
 		.on('start', function(result) {
 			messenger.dispatch('change', result);
@@ -171,8 +227,11 @@ $(function() {
 		.on('stop', function(result) {
 			messenger.dispatch('complete', result);
 		})
-		.on('move', function(result) {
-			messenger.dispatch('move', result);
+		.on('moveMain', function(result) {
+			messenger.dispatch('moveMain', result);
+		})
+		.on('moveMini', function(result) {
+			messenger.dispatch('moveMini', result);
 		});
 
 	dragPosition
@@ -181,9 +240,11 @@ $(function() {
 				.setState('dragH', result.dragH)
 				.setState('dragW', result.dragW)
 				.setState('posY', result.posY)
-				.setState('posX', result.posX);
+				.setState('posX', result.posX)
+				.setState('mTop', result.mTop)
+				.setState('mLeft', result.mLeft);
 		})
-		.on('move', function(result) {
+		.on('moveMain', function(result) {
 			var self = this;
 			var posX = self.getState('posX');
 			var posY = self.getState('posY');
@@ -200,13 +261,37 @@ $(function() {
 				left: result.eX + posX - dragW
 			});
 		})
+		.on('moveMini', function(result) {
+			var self = this;
+			var posX = self.getState('posX');
+			var posY = self.getState('posY');
+
+			if (!posX || !posY) {
+				return;
+			}
+
+			var dragH = self.getState('dragH');
+			var dragW = self.getState('dragW');
+
+			console.log({
+				top: result.eY + posY - dragH,
+				left: result.eX + posX - dragW
+			});
+
+			result.callback({
+				top: result.eY + posY - dragH,
+				left: result.eX + posX - dragW,
+				mTop: self.getState('mTop'),
+				mLeft: self.getState('mLeft')
+			});
+		})
 		.on('complete', function(result) {
 			console.log('complete');
 			result.callback();
 		});
 
 	$dragTarget
-		.bind('mousedown.draggable touchstart.draggable', function(e) {
+		.bind('mousedown.dragMain touchstart.dragMain', function(e) {
 			e.preventDefault();
 
 			setTimeout(function() {
@@ -215,7 +300,7 @@ $(function() {
 				var posY = $dragTarget.offset().top + dragH - e.pageY;
 				var posX = $dragTarget.offset().left + dragW - e.pageX;
 
-				$dragTarget.addClass('draggable');
+				$dragTarget.addClass('dragMain');
 
 				if (e.originalEvent.changedTouches) {
 					posY = $dragTarget.offset().top + dragH - e.originalEvent.changedTouches[0].pageY;
@@ -228,11 +313,58 @@ $(function() {
 					posY: posY,
 					posX: posX
 				});
-			}, 1000 / 60);
+			}, 4);
+		});
+
+	$minimapWrap
+		.delegate('#js-minimaphighlight', 'mousedown', function(e) {
+			e.preventDefault();
+			var $this = $(e.currentTarget);
+
+			setTimeout(function() {
+				var parentPos = getPosition(e.currentTarget);
+				var mTop = e.pageY - parentPos.y - (scale * $highlight.height() / 2);
+				var mLeft = e.pageX - parentPos.x - (scale * $highlight.width() / 2);
+				var dragH = $this.outerHeight();
+				var dragW = $this.outerWidth();
+				var posY = dragH - e.pageY;
+				var posX = dragW - e.pageX;
+
+				$this.addClass('dragMini');
+
+				if (e.originalEvent.changedTouches) {
+					mTop = e.originalEvent.changedTouches[0].pageY - parentPos.y - (scale * $highlight.height() / 2);
+					mLeft = e.originalEvent.changedTouches[0].pageX - parentPos.x - (scale * $highlight.width() / 2);
+				}
+
+				dragAction.start({
+					dragH: dragH,
+					dragW: dragW,
+					posY: posY,
+					posX: posX,
+					mTop: mTop,
+					mLeft: mLeft
+				});
+			}, 4);
+		})
+		.delegate('.js-minimap', 'mousedown', function(e) {
+			var parentPos = getPosition(e.currentTarget);
+			var mTop = e.pageY - parentPos.y - (scale * $highlight.height() / 2);
+			var mLeft = e.pageX - parentPos.x - (scale * $highlight.width() / 2)
+
+			$highlight.css({
+				'margin-top': mTop,
+				'margin-left': mLeft
+			});
+
+			$dragTarget.offset({
+				top: ($highlight.position().top + (offsetStore.top * scale) - mTop) / scale,
+				left: offsetStore.left + (mLeft / -scale)
+			});
 		});
 
 	$('html')
-		.bind('mousemove.draggable touchmove.draggable', function(e) {
+		.bind('mousemove.dragMain touchmove.dragMain', function(e) {
 			e.preventDefault();
 
 			var eY, eX;
@@ -245,64 +377,48 @@ $(function() {
 				eX = e.pageX;
 			}
 
-			dragAction.move({
+			dragAction.moveMain({
 				eY: eY,
 				eX: eX,
 				callback: function(pos) {
 					setTimeout(function() {
-						if ($('.draggable').length > 0) {
+						if ($('.dragMain').length > 0) {
 							$highlight.css({
 								'margin-top': $highlight.position().top - (pos.top - offsetStore.top) * scale,
-								'margin-left': (pos.left - offsetStore.left) * scale
+								'margin-left': - (pos.left - offsetStore.left) * scale
 							});
-							$('.draggable').offset(pos);
+							$('.dragMain').offset(pos);
+						}
+					}, 4);
+				}
+			});
+
+			dragAction.moveMini({
+				eY: eY,
+				eX: eX,
+				callback: function(pos) {
+					setTimeout(function() {
+						if ($('.dragMini').length > 0) {
+							$highlight.css({
+								'margin-top': pos.top,
+								'margin-left': pos.left
+							});
+							console.log(pos);
+							$dragTarget.offset({
+								top: ($highlight.position().top + (offsetStore.top * scale) - pos.top) / scale,
+								left: offsetStore.left + (pos.left / -scale)
+							});
 						}
 					}, 4);
 				}
 			});
 		})
-		.bind('mouseup.draggable touchend', function() {
+		.bind('mouseup.dragMain touchend', function() {
 			dragAction.stop({
 				callback: function() {
-					$dragTarget.removeClass('draggable');
+					$dragTarget.removeClass('dragMain');
+					$('#js-minimaphighlight').removeClass('dragMini');
 				}
 			});
 		});
-
-
-
-
-	$minimapWrap
-		.html($minimap)
-		.append($highlight);
-
-	$minimap
-		.attr('id', '')
-		.css({
-			'transform-origin': '0 0',
-			'-webkit-transform': transformStyle,
-			'-moz-transform': transformStyle,
-			'-ms-transform': transformStyle,
-			'-o-transform': transformStyle,
-			'transform': transformStyle,
-			'left': minimapleft,
-			'position': 'absolute'
-		});
-
-	$highlight.css({
-		'width': 710,
-		'height': 452,
-		'position': 'absolute',
-		'top': '0',
-		'left': minimapleft,
-		'background': 'rgba(0,0,0,.6)',
-		'transform-origin': '0 0',
-		'-webkit-transform': transformStyle,
-		'-moz-transform': transformStyle,
-		'-ms-transform': transformStyle,
-		'-o-transform': transformStyle,
-		'transform': transformStyle
-	});
 });
-
-
