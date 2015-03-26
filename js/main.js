@@ -325,8 +325,8 @@ $(function() {
 				$this.addClass('dragMini');
 
 				if (e.originalEvent.changedTouches) {
-					mTop = e.originalEvent.changedTouches[0].pageY - parentPos.y - (scale * $highlight.height() / 2);
-					mLeft = e.originalEvent.changedTouches[0].pageX - parentPos.x - (scale * $highlight.width() / 2);
+					mTop = e.originalEvent.changedTouches[0].pageY - parentPos.y - ($highlight.height() / 2);
+					mLeft = e.originalEvent.changedTouches[0].pageX - parentPos.x - ($highlight.width() / 2);
 				}
 
 				dragAction.start({
