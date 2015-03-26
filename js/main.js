@@ -131,11 +131,17 @@ DragAction.prototype.moveMini = function(messageData) {
 	this.emit('moveMini', messageData);
 };
 
-
 var DragPosition = function() {
 	SimpleEvents.apply(this, arguments);
 
-	this.states = {};
+	this.states = {
+		dragH: null,
+		dragW: null,
+		posY: null,
+		posX: null,
+		mTop: null,
+		mLeft: null
+	};
 };
 
 inherits(DragPosition, SimpleEvents);
@@ -150,20 +156,17 @@ DragPosition.prototype.getState = function(name) {
 	return this.states[name];
 };
 
-function getPosition(element) {
-	var xPosition = 0;
-	var yPosition = 0;
+function MinimapPosition(el) {
+	var self = this;
 
-	while (element) {
-		xPosition += (element.offsetLeft - element.scrollLeft + element.clientLeft);
-		yPosition += (element.offsetTop - element.scrollTop + element.clientTop);
-		element = element.offsetParent;
+	self.x = 0;
+	self.y = 0;
+
+	while (el) {
+		self.x += (el.offsetLeft - el.scrollLeft + el.clientLeft);
+		self.y += (el.offsetTop - el.scrollTop + el.clientTop);
+		el = el.offsetParent;
 	}
-
-	return {
-		x: xPosition,
-		y: yPosition
-	};
 }
 
 /* jshint jquery:true*/
@@ -176,14 +179,15 @@ $(function() {
 
 	var $minimap = $dragTarget.clone();
 	var $minimapWrap = $('#minimap');
-	var $highlight = window.$highlight = $('<div>a</div>');
+	var $highlight = $('<div></div>');
 
-	var scale = window.scale = $minimapWrap.height() / $dragTarget.height();
+	var scale = $minimapWrap.height() / $dragTarget.height();
 	var posX = $minimapWrap.width() / 2 - $minimapWrap.height() / $dragTarget.height() * $dragTarget.width() / 2;
 	var transformStyle = 'scale(' + scale  + ')';
 	var minimapleft = posX;
 
 	var offsetStore = $dragTarget.offset();
+	var parentPos;
 
 	$minimapWrap
 		.html($minimap)
@@ -206,19 +210,16 @@ $(function() {
 	$highlight
 		.attr('id', 'js-minimaphighlight')
 		.css({
-			'width': 710,
-			'height': 452,
+			'width': 710 * scale,
+			'height': 452 * scale,
 			'position': 'absolute',
 			'top': '0',
 			'left': minimapleft,
 			'background': 'rgba(0,0,0,.4)',
-			'transform-origin': '0 0',
-			'-webkit-transform': transformStyle,
-			'-moz-transform': transformStyle,
-			'-ms-transform': transformStyle,
-			'-o-transform': transformStyle,
-			'transform': transformStyle
+			'border': '1px solid #333'
 		});
+
+	parentPos = new MinimapPosition($minimap[0]);
 
 	dragAction
 		.on('start', function(result) {
@@ -273,20 +274,12 @@ $(function() {
 			var dragH = self.getState('dragH');
 			var dragW = self.getState('dragW');
 
-			console.log({
-				top: result.eY + posY - dragH,
-				left: result.eX + posX - dragW
-			});
-
 			result.callback({
-				top: result.eY + posY - dragH,
-				left: result.eX + posX - dragW,
-				mTop: self.getState('mTop'),
-				mLeft: self.getState('mLeft')
+				top: result.eY + posY - dragH + self.getState('mTop'),
+				left: result.eX + posX - dragW + self.getState('mLeft')
 			});
 		})
 		.on('complete', function(result) {
-			console.log('complete');
 			result.callback();
 		});
 
@@ -317,14 +310,13 @@ $(function() {
 		});
 
 	$minimapWrap
-		.delegate('#js-minimaphighlight', 'mousedown', function(e) {
+		.delegate('#js-minimaphighlight', 'mousedown.dragMini touchstart.dragMini', function(e) {
 			e.preventDefault();
 			var $this = $(e.currentTarget);
 
 			setTimeout(function() {
-				var parentPos = getPosition(e.currentTarget);
-				var mTop = e.pageY - parentPos.y - (scale * $highlight.height() / 2);
-				var mLeft = e.pageX - parentPos.x - (scale * $highlight.width() / 2);
+				var mTop = e.pageY - parentPos.y - ($highlight.height() / 2);
+				var mLeft = e.pageX - parentPos.x - ($highlight.width() / 2);
 				var dragH = $this.outerHeight();
 				var dragW = $this.outerWidth();
 				var posY = dragH - e.pageY;
@@ -347,10 +339,9 @@ $(function() {
 				});
 			}, 4);
 		})
-		.delegate('.js-minimap', 'mousedown', function(e) {
-			var parentPos = getPosition(e.currentTarget);
-			var mTop = e.pageY - parentPos.y - (scale * $highlight.height() / 2);
-			var mLeft = e.pageX - parentPos.x - (scale * $highlight.width() / 2)
+		.delegate('.js-minimap', 'mousedown touchstart', function(e) {
+			var mTop = e.pageY - parentPos.y - ($highlight.height() / 2);
+			var mLeft = e.pageX - parentPos.x - ($highlight.width() / 2)
 
 			$highlight.css({
 				'margin-top': mTop,
@@ -403,7 +394,6 @@ $(function() {
 								'margin-top': pos.top,
 								'margin-left': pos.left
 							});
-							console.log(pos);
 							$dragTarget.offset({
 								top: ($highlight.position().top + (offsetStore.top * scale) - pos.top) / scale,
 								left: offsetStore.left + (pos.left / -scale)
