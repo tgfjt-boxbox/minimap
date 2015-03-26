@@ -283,6 +283,11 @@ $(function() {
 			result.callback();
 		});
 
+	$(window).resize(function() {
+		parentPos = new MinimapPosition($minimap[0]);
+		offsetStore = $dragTarget.offset();
+	});
+
 	$dragTarget
 		.bind('mousedown.dragMain touchstart.dragMain', function(e) {
 			e.preventDefault();
@@ -325,8 +330,10 @@ $(function() {
 				$this.addClass('dragMini');
 
 				if (e.originalEvent.changedTouches) {
-					mTop = e.originalEvent.changedTouches[0].pageY - parentPos.y - (scale * $highlight.height() / 2);
-					mLeft = e.originalEvent.changedTouches[0].pageX - parentPos.x - (scale * $highlight.width() / 2);
+					mTop = e.originalEvent.changedTouches[0].pageY - parentPos.y - ($highlight.height() / 2);
+					mLeft = e.originalEvent.changedTouches[0].pageX - parentPos.x - ($highlight.width() / 2);
+					posY = dragH - e.originalEvent.changedTouches[0].pageY;
+					posX = dragW - e.originalEvent.changedTouches[0].pageX;
 				}
 
 				dragAction.start({
