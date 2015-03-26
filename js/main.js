@@ -283,6 +283,11 @@ $(function() {
 			result.callback();
 		});
 
+	$(window).resize(function() {
+		parentPos = new MinimapPosition($minimap[0]);
+		offsetStore = $dragTarget.offset();
+	});
+
 	$dragTarget
 		.bind('mousedown.dragMain touchstart.dragMain', function(e) {
 			e.preventDefault();
