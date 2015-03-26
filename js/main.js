@@ -332,6 +332,8 @@ $(function() {
 				if (e.originalEvent.changedTouches) {
 					mTop = e.originalEvent.changedTouches[0].pageY - parentPos.y - ($highlight.height() / 2);
 					mLeft = e.originalEvent.changedTouches[0].pageX - parentPos.x - ($highlight.width() / 2);
+					posY = dragH - e.originalEvent.changedTouches[0].pageY;
+					posX = dragW - e.originalEvent.changedTouches[0].pageX;
 				}
 
 				dragAction.start({
